@@ -346,6 +346,10 @@ impl MessageHandler<DocumentMessage, DocumentInputs<'_>> for DocumentMessageHand
 				}
 			}
 			BackupDocument { network } => self.backup_with_document(network, responses),
+			ClearArtboards => {
+				self.backup(responses);
+				responses.add(GraphOperationMessage::ClearArtboards);
+			}
 			ClearLayersPanel => {
 				// Send an empty layer list
 				let data_buffer: RawBuffer = Self::default().serialize_root();
@@ -366,6 +370,7 @@ impl MessageHandler<DocumentMessage, DocumentInputs<'_>> for DocumentMessageHand
 					nodes: HashMap::new(),
 					parent,
 					insert_index: -1,
+					alias: String::new(),
 				});
 				responses.add(NodeGraphMessage::SelectedNodesSet { nodes: vec![id] });
 			}
@@ -419,7 +424,13 @@ impl MessageHandler<DocumentMessage, DocumentInputs<'_>> for DocumentMessageHand
 
 					let id = NodeId(generate_uuid());
 					let insert_index = -1;
-					responses.add(GraphOperationMessage::NewCustomLayer { id, nodes, parent, insert_index });
+					responses.add(GraphOperationMessage::NewCustomLayer {
+						id,
+						nodes,
+						parent,
+						insert_index,
+						alias: String::new(),
+					});
 				}
 			}
 			FlipSelectedLayers { flip_axis } => {
@@ -497,6 +508,7 @@ impl MessageHandler<DocumentMessage, DocumentInputs<'_>> for DocumentMessageHand
 					nodes: HashMap::new(),
 					parent,
 					insert_index: calculated_insert_index.unwrap_or(-1),
+					alias: String::new(),
 				});
 				responses.add(PortfolioMessage::PasteIntoFolder {
 					clipboard: Clipboard::Internal,
@@ -1151,11 +1163,15 @@ impl DocumentMessageHandler {
 			widgets: vec![
 				DropdownInput::new(
 					vec![vec![
-						MenuListEntry::new(DocumentMode::DesignMode.to_string()).icon(DocumentMode::DesignMode.icon_name()),
-						MenuListEntry::new(DocumentMode::SelectMode.to_string())
+						MenuListEntry::new(format!("{:?}", DocumentMode::DesignMode))
+							.label(DocumentMode::DesignMode.to_string())
+							.icon(DocumentMode::DesignMode.icon_name()),
+						MenuListEntry::new(format!("{:?}", DocumentMode::SelectMode))
+							.label(DocumentMode::SelectMode.to_string())
 							.icon(DocumentMode::SelectMode.icon_name())
 							.on_update(|_| DialogMessage::RequestComingSoonDialog { issue: Some(330) }.into()),
-						MenuListEntry::new(DocumentMode::GuideMode.to_string())
+						MenuListEntry::new(format!("{:?}", DocumentMode::GuideMode))
+							.label(DocumentMode::SelectMode.to_string())
 							.icon(DocumentMode::GuideMode.icon_name())
 							.on_update(|_| DialogMessage::RequestComingSoonDialog { issue: Some(331) }.into()),
 					]])
@@ -1245,18 +1261,15 @@ impl DocumentMessageHandler {
 				.widget_holder(),
 			Separator::new(SeparatorType::Unrelated).widget_holder(),
 			RadioInput::new(vec![
-				RadioEntryData::default()
-					.value("normal")
+				RadioEntryData::new("normal")
 					.icon("ViewModeNormal")
 					.tooltip("View Mode: Normal")
 					.on_update(|_| DocumentMessage::SetViewMode { view_mode: ViewMode::Normal }.into()),
-				RadioEntryData::default()
-					.value("outline")
+				RadioEntryData::new("outline")
 					.icon("ViewModeOutline")
 					.tooltip("View Mode: Outline")
 					.on_update(|_| DocumentMessage::SetViewMode { view_mode: ViewMode::Outline }.into()),
-				RadioEntryData::default()
-					.value("pixels")
+				RadioEntryData::new("pixels")
 					.icon("ViewModePixels")
 					.tooltip("View Mode: Pixels")
 					.on_update(|_| DialogMessage::RequestComingSoonDialog { issue: Some(320) }.into()),

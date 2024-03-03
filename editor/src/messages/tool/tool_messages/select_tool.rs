@@ -106,8 +106,8 @@ impl SelectTool {
 		let layer_selection_behavior_entries = [NestedSelectionBehavior::Deepest, NestedSelectionBehavior::Shallowest]
 			.iter()
 			.map(|mode| {
-				MenuListEntry::new(mode.to_string())
-					.value(mode.to_string())
+				MenuListEntry::new(format!("{mode:?}"))
+					.label(mode.to_string())
 					.on_update(move |_| SelectToolMessage::SelectOptions(SelectOptionsUpdate::NestedSelectionBehavior(*mode)).into())
 			})
 			.collect();
@@ -341,7 +341,13 @@ impl SelectToolData {
 			let id = NodeId(generate_uuid());
 			let insert_index = -1;
 			let layer = LayerNodeIdentifier::new_unchecked(id);
-			responses.add(GraphOperationMessage::NewCustomLayer { id, nodes, parent, insert_index });
+			responses.add(GraphOperationMessage::NewCustomLayer {
+				id,
+				nodes,
+				parent,
+				insert_index,
+				alias: String::new(),
+			});
 			new_dragging.push(layer);
 		}
 		let nodes = new_dragging.iter().map(|layer| layer.to_node()).collect();
